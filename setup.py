@@ -5,7 +5,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setuptools.setup(
     name="auto_ts",
-    version="0.0.71",
+    version="0.0.92",
     author="Ram Seshadri",
     # author_email="author@example.com",
     description="Automatically Build Multiple Time Series models fast - now with Facebook Prophet!",
@@ -13,7 +13,7 @@ setuptools.setup(
     long_description_content_type="text/markdown",
     license='Apache License 2.0',
     url="https://github.com/AutoViML/Auto_TS",
-    packages=setuptools.find_packages(exclude=("tests",)),
+    packages=setuptools.find_packages(exclude=("auto_ts/test",)),
     install_requires=[
         "ipython",
         "jupyter",
@@ -26,10 +26,11 @@ setuptools.setup(
         "prophet",
         "scikit-learn>=0.24.0",
         "statsmodels",
-        "xgboost>=1.5.1",
+        "xgboost>=2.0",
         "prettytable",
         "dask>=2022.1.0",
-        "pyyaml==5.4.1",
+        "pyyaml>=5.4.1",
+        "GPUtil>=1.4.0",
         "distributed>=2022.2.0",
     ],
     classifiers=[

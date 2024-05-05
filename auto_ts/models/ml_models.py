@@ -1,45 +1,28 @@
 import pandas as pd
 import numpy as np
 np.random.seed(99)
-from sklearn.model_selection import train_test_split
-from sklearn.model_selection import KFold
-from sklearn.model_selection import GridSearchCV
 from sklearn.multioutput import MultiOutputClassifier, MultiOutputRegressor
-from sklearn.multiclass import OneVsRestClassifier
-import xgboost as xgb
 from xgboost.sklearn import XGBClassifier
-from xgboost.sklearn import XGBRegressor
 from sklearn.model_selection import train_test_split
 from sklearn.multiclass import OneVsRestClassifier
 from sklearn.preprocessing import LabelEncoder
-import lightgbm as lgbm
 from sklearn.model_selection import KFold, cross_val_score,StratifiedKFold
 import seaborn as sns
-from sklearn.preprocessing import OneHotEncoder, LabelEncoder, label_binarize
-import csv
 import re
+import GPUtil
 from xgboost import XGBRegressor, XGBClassifier
 from sklearn.metrics import mean_squared_log_error, mean_squared_error,balanced_accuracy_score
 from scipy import stats
 from sklearn.model_selection import RandomizedSearchCV
 import scipy as sp
-import time
-import copy
-from sklearn.preprocessing import StandardScaler, MinMaxScaler
-from collections import Counter, defaultdict
-import pdb
 #################  All these imports are needed for the pipeline #######
 import time
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
-from sklearn.impute import SimpleImputer
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.linear_model import LogisticRegression
 from sklearn.compose import make_column_transformer
 from sklearn.pipeline import make_pipeline
-from sklearn.preprocessing import LabelEncoder, LabelBinarizer
-from sklearn.base import BaseEstimator, TransformerMixin #gives fit_transform method for free
-import pdb
 from sklearn.base import TransformerMixin
 from collections import defaultdict
 from sklearn.preprocessing import MaxAbsScaler
@@ -49,9 +32,10 @@ from sklearn.preprocessing import FunctionTransformer
 from ..utils import My_LabelEncoder, My_LabelEncoder_Pipe
 from ..utils import left_subtract
 #################################################################################
-def complex_XGBoost_model(X_train, y_train, X_test, log_y=False, GPU_flag=False,
-                                scaler = '', enc_method='label', n_splits=5, 
-                                num_boost_round=1000, verbose=-1):
+def complex_XGBoost_model(
+        X_train, y_train, X_test, log_y=False, GPU_flag=False,
+        scaler = '', enc_method='label', n_splits=5,
+        num_boost_round=1000, verbose=-1):
     """
     This model is called complex because it handle multi-label, mulit-class datasets which XGBoost ordinarily cant.
     Just send in X_train, y_train and what you want to predict, X_test
@@ -108,7 +92,7 @@ def complex_XGBoost_model(X_train, y_train, X_test, log_y=False, GPU_flag=False,
     #########     G P U     P R O C E S S I N G      B E G I N S    ############
     ###### This is where we set the CPU and GPU parameters for XGBoost
     if GPU_flag:
-        GPU_exists = check_if_GPU_exists()
+        GPU_exists = len(GPUtil.getAvailable()) > 0
     else:
         GPU_exists = False
     #####   Set the Scoring Parameters here based on each model and preferences of user ###
@@ -119,6 +103,7 @@ def complex_XGBoost_model(X_train, y_train, X_test, log_y=False, GPU_flag=False,
     cpu_params['updater'] = 'grow_colmaker'
     cpu_params['predictor'] = 'cpu_predictor'
     if GPU_exists:
+        param['device'] = "cuda"
         param['tree_method'] = 'gpu_hist'
         param['gpu_id'] = 0
         param['updater'] = 'grow_gpu_hist' #'prune'
@@ -436,8 +421,7 @@ def get_sample_weight_array(y_train):
     wt_array = wt_array.values
     return wt_array
 ###############################################################################
-from collections import OrderedDict
-def get_scale_pos_weight(y_input):    
+def get_scale_pos_weight(y_input):
     y_input = copy.deepcopy(y_input)
     if isinstance(y_input, np.ndarray):
         y_input = pd.Series(y_input)

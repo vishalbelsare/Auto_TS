@@ -1,6 +1,6 @@
 import warnings
 import copy
-from typing import List, Optional, Tuple
+from typing import List, Optional
 
 import numpy as np  # type: ignore
 import pandas as pd  # type: ignore
@@ -19,7 +19,6 @@ from sklearn.ensemble import (BaggingRegressor, ExtraTreesRegressor,  # type: ig
                              AdaBoostRegressor, AdaBoostClassifier, # type: ignore
                              RandomForestClassifier, RandomForestRegressor) # type: ignore
 
-from xgboost import XGBRegressor, XGBClassifier
 from xgboost import plot_importance
 from sklearn.metrics import mean_squared_error
 
@@ -27,7 +26,6 @@ from sklearn.linear_model import LinearRegression, LogisticRegression, RidgeCV #
 from sklearn.svm import LinearSVC, SVR, LinearSVR # type: ignore
 from sklearn.tree import DecisionTreeRegressor, DecisionTreeClassifier  # type: ignore
 
-import dask
 import dask.dataframe as dd
 import xgboost as xgb
 from dask.distributed import Client, progress
@@ -35,30 +33,22 @@ import psutil
 import json
 ################################################################################################
 from .build_base import BuildBase
-from .ml_models import complex_XGBoost_model, data_transform, analyze_problem_type
+from .ml_models import complex_XGBoost_model, analyze_problem_type
 
 # helper functions
-from ..utils import print_static_rmse, print_dynamic_rmse, convert_timeseries_dataframe_to_supervised, print_ts_model_stats
-from ..utils import change_to_datetime_index, change_to_datetime_index_test, reduce_mem_usage, load_test_data
-from ..utils import My_LabelEncoder, My_LabelEncoder_Pipe
+from ..utils import print_dynamic_rmse, convert_timeseries_dataframe_to_supervised
+from ..utils import change_to_datetime_index_test, load_test_data
 from ..utils import left_subtract
 #################################################################################################
 import pdb
 import time
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
-from sklearn.impute import SimpleImputer
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.feature_extraction.text import CountVectorizer
-from sklearn.linear_model import LogisticRegression
-from sklearn.compose import make_column_transformer
-from sklearn.pipeline import make_pipeline
-from sklearn.preprocessing import LabelEncoder, LabelBinarizer
-from sklearn.base import BaseEstimator, TransformerMixin #gives fit_transform method for free
-import pdb
 from sklearn.base import TransformerMixin
 from collections import defaultdict
-from sklearn.preprocessing import MaxAbsScaler
-from sklearn.preprocessing import FunctionTransformer
+
+
 ###################################################################################################
 class BuildML(BuildBase):
     def __init__(self, scoring: str = '', forecast_period: int = 2, ts_column: str = '', 
@@ -95,7 +85,13 @@ class BuildML(BuildBase):
         self.train_df = pd.DataFrame()
 
 
-    def fit(self, ts_df: pd.DataFrame, target_col: str, ts_column:str, cv: Optional[int]=None, lags: int = 0):
+    def fit(self,
+            ts_df: pd.DataFrame,
+            target_col: str,
+            ts_column:str,
+            cv: Optional[int]=None,
+            lags: int = 0,
+            GPU_flag: bool = False):
         """
         Build a Time Series Model using Machine Learning models.
         Quickly builds and runs multiple models for a clean data set (only numerics).
@@ -316,8 +312,8 @@ class BuildML(BuildBase):
             
             model_name = 'XGBoost'
             print('### Number of booster rounds = %s for XGBoost which can be set during setup ####' %self.num_boost_rounds)
-            outputs = complex_XGBoost_model(X_train_fold,y_train_fold,
-                        X_test_fold, log_y=False, GPU_flag=False,
+            outputs = complex_XGBoost_model(X_train_fold, y_train_fold,
+                        X_test_fold, log_y=False, GPU_flag=GPU_flag,
                         scaler='', enc_method='', n_splits=cv_in, 
                         num_boost_round=self.num_boost_rounds, verbose=0)
             print('XGBoost model tuning completed')
@@ -864,21 +860,15 @@ def create_ts_features(
     return df
 #################################################################################
 ####################################################################################
-import re
 import pdb
 import pprint
-from itertools import cycle, combinations
-from collections import defaultdict, OrderedDict
-import copy
 import time
 import sys
-import random
 import xlrd
-import statsmodels
 from io import BytesIO
-import base64
 from functools import reduce
-import copy
+
+
 #######################################################################################################
 def classify_features(dfte, depVar, verbose=0):
     dfte = copy.deepcopy(dfte)
